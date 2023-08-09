@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  fiftyone:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    network_mode: "host"
+    volumes:
+      - "../fiftyone:/root/fiftyone"
+      - "../datum:/input"
+      - "../data/:/data"
+
+volumes:
+  fiftyone:

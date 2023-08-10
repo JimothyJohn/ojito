@@ -34,3 +34,5 @@
 # My stuff
 .logs/
 .pio/
+secrets.h
+.vscode/

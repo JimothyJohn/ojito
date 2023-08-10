@@ -2,24 +2,24 @@
 // README at: https://github.com/devcontainers/templates/tree/main/src/debian
 {
 	"name": "ojito",
-	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	// "image": "mcr.microsoft.com/devcontainers/base:bullseye",
+	// Use a Docker Compose file. More info: https://containers.dev/guide/dockerfile
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "ojito",
+	"workspaceFolder": "/src",
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 	// Configure tool-specific properties.
-	// "customizations": {},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"platformio.platformio-ide",
+				"ms-vscode.cpptools-extension-pack"
+			]
+		}
+	},
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	// "remoteUser": "root"
-	"runArgs": [
-		"--device=/dev/ttyACM0:/dev/ttyACM0"
-	],
-	"dockerComposeFile": [
-		"./docker-compose.yaml"
-	],
-	"service": "ojito",
 	// "workspaceFolder": "/workspace",
-	// Set to the root of your project, you can also specify `postCreateCommand`, etc.
-	"context": "..",
 }

@@ -36,3 +36,4 @@
 .pio/
 secrets.h
 .vscode/
+.env*

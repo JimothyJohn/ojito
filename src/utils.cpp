@@ -44,8 +44,7 @@ bool checkResponse(int responseCode)
     return false;
 }
 
-StaticJsonDocument<JSON_SIZE>
-replicateRequest(String host, StaticJsonDocument<JSON_SIZE> body, String action)
+StaticJsonDocument<JSON_SIZE> replicateRequest(DynamicJsonDocument body, String action)
 {
     HTTPClient http;
     char authorization[128];
@@ -59,7 +58,7 @@ replicateRequest(String host, StaticJsonDocument<JSON_SIZE> body, String action)
 
     if (WiFi.status() == WL_CONNECTED)
     {
-        http.begin(host);
+        http.begin(HOST);
         http.addHeader("Content-Type", "application/json");
         http.addHeader("Authorization", authorization);
 
@@ -101,7 +100,9 @@ char *base64Image(const uint8_t *buffer, size_t length)
 
     // Calculate size needed for the base64 output
     size_t base64Length = base64_enc_len(length); // Approximate size of base64 encoded data
+
     // Create buffer in PSRAM to avoid overloading the memory
+    // char *base64Buffer = (char *)ps_malloc(base64Length + prefixLength + 1);
     char *base64Buffer = (char *)ps_malloc(base64Length + prefixLength + 1);
     if (!base64Buffer)
     {
@@ -119,7 +120,7 @@ char *base64Image(const uint8_t *buffer, size_t length)
 }
 
 // Save pictures to SD card
-void take_photo(const char *fileName)
+void take_photo()
 {
     // Take a photo
     camera_fb_t *fb = esp_camera_fb_get();
@@ -141,4 +142,33 @@ void take_photo(const char *fileName)
 
     // Release image buffer
     esp_camera_fb_return(fb);
+}
+
+StaticJsonDocument<JSON_SIZE> see_world()
+{
+    DynamicJsonDocument request(10000);
+    StaticJsonDocument<JSON_SIZE> response;
+    camera_fb_t *fb = esp_camera_fb_get();
+
+    if (!fb)
+    {
+        Serial.println("Failed to get camera frame buffer");
+        return response;
+    }
+    char *encodedImage = base64Image(fb->buf, fb->len);
+
+    request["version"] = MODEL_VERSION;
+    request["input"]["image"] = encodedImage;
+    // body["input"]["image"] = "https://pbxt.replicate.delivery/IWHv3cYJ7CAVPFJN5M9JohLfLr2XaGxXgh5ykca1kvourUZV/taylor1.jpg";
+    // serializeJson(body["input"]["image"], Serial);
+    size_t base64Length = base64_enc_len(fb->len); // Approximate size of base64 encoded data
+
+    // body["input"]["image"] = "";
+    // TODO Stop rewriting memory every time
+
+    // Release buffers
+    free(encodedImage);
+    esp_camera_fb_return(fb);
+
+    return replicateRequest(request, "create");
 }

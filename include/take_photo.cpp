@@ -1,33 +1,38 @@
 // https://raw.githubusercontent.com/limengdu/SeeedStudio-XIAO-ESP32S3-Sense-camera/main/take_photos/take_photos.ino
-#include <Arduino.h>     // Handle JSON messages
-#include <HTTPClient.h>  // Enable API calls
-#include <ArduinoJson.h> // Handle JSON messages
 #include "esp_camera.h"
 #include "FS.h"
 #include "SD.h"
 #include "SPI.h"
 
 #define CAMERA_MODEL_XIAO_ESP32S3 // Has PSRAM
-#define JSON_SIZE 512
-// Name of the server we want to connect to
-#define HOST "arduino.cc";
-// Path to download (this is the bit after the hostname in the URL
-// that you want to download
-#define PATH "/";
 
 #include "camera_pins.h"
-#include "camera_index.h"
-
-static HTTPClient http;
 
 unsigned long lastCaptureTime = 0; // Last shooting time
 int imageCount = 1;                // File Counter
 bool camera_sign = false;          // Check camera status
 bool sd_sign = false;              // Check sd status
 
-// Dual-core tasks
-TaskHandle_t CameraTask;
+// Save pictures to SD card
+void photo_save(const char *fileName)
+{
+    // Take a photo
+    camera_fb_t *fb = esp_camera_fb_get();
+    if (!fb)
+    {
+        Serial.println("Failed to get camera frame buffer");
+        return;
+    }
+    // Save photo to file
+    writeFile(SD, fileName, fb->buf, fb->len);
 
+    // Release image buffer
+    esp_camera_fb_return(fb);
+
+    Serial.println("Photo saved to file");
+}
+
+// SD card write file
 void writeFile(fs::FS &fs, const char *path, uint8_t *data, size_t len)
 {
     Serial.printf("Writing file: %s\r\n", path);
@@ -49,80 +54,11 @@ void writeFile(fs::FS &fs, const char *path, uint8_t *data, size_t len)
     file.close();
 }
 
-// Save pictures to SD card
-void photo_save(const char *fileName)
-{
-    // Take a photo
-    camera_fb_t *fb = esp_camera_fb_get();
-    if (!fb)
-    {
-        Serial.println("Failed to get camera frame buffer");
-        return;
-    }
-    // Save photo to file
-    writeFile(SD, fileName, fb->buf, fb->len);
-
-    // Release image buffer
-    esp_camera_fb_return(fb);
-
-    Serial.println("Photo saved to file");
-}
-
-void takePhoto(void *pvParameters)
-{
-    Serial.print("Camera task running on core ");
-    Serial.println(xPortGetCoreID());
-
-    for (;;)
-    {
-        // TODO: Remove elegantly
-        // DELETING THIS DELAY WILL CRASH THE MCU
-        delay(50);
-
-        // Camera & SD available, start taking pictures
-        if (camera_sign && sd_sign)
-        {
-            // Get the current time
-            unsigned long now = millis();
-
-            // If it has been more than 1 minute since the last shot, take a picture and save it to the SD card
-            if ((now - lastCaptureTime) >= 5000)
-            {
-                if (client.connect(HOST, 80))
-                {
-                    Serial.println("Connected to server");
-                }
-                else
-                {
-                    Serial.println("connection failed");
-                }
-                char filename[32];
-                sprintf(filename, "/image%d.jpg", imageCount);
-                photo_save(filename);
-                Serial.printf("Saved picture: %s\r\n", filename);
-                Serial.println("Photos will begin in one minute, please be ready.");
-                imageCount++;
-                lastCaptureTime = now;
-            }
-        }
-    }
-}
-
 void setup()
 {
     Serial.begin(115200);
     while (!Serial)
         ; // When the serial monitor is turned on, the program starts to execute
-
-    // create a task that will be executed in the AuxTaskcode() function, with priority 1 and executed on core 0
-    xTaskCreatePinnedToCore(
-        takePhoto,   /* Task function. */
-        "Camera",    /* name of task. */
-        10000,       /* Stack size of task */
-        NULL,        /* parameter of the task */
-        1,           /* priority of the task */
-        &CameraTask, /* Task handle to keep track of created task */
-        0);          /* pin task to core 0 */
 
     camera_config_t config;
     config.ledc_channel = LEDC_CHANNEL_0;
@@ -225,4 +161,24 @@ void setup()
     Serial.println("Photos will begin in one minute, please be ready.");
 }
 
-void loop() {}
+void loop()
+{
+    // Camera & SD available, start taking pictures
+    if (camera_sign && sd_sign)
+    {
+        // Get the current time
+        unsigned long now = millis();
+
+        // If it has been more than 1 minute since the last shot, take a picture and save it to the SD card
+        if ((now - lastCaptureTime) >= 60000)
+        {
+            char filename[32];
+            sprintf(filename, "/image%d.jpg", imageCount);
+            photo_save(filename);
+            Serial.printf("Saved picture: %s\r\n", filename);
+            Serial.println("Photos will begin in one minute, please be ready.");
+            imageCount++;
+            lastCaptureTime = now;
+        }
+    }
+}

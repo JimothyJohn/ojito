@@ -2,12 +2,6 @@
   "folders": [
     {
       "path": "."
-    },
-    {
-      "path": "../uServer"
-    },
-    {
-      "path": "../uplink"
     }
   ],
   "settings": {

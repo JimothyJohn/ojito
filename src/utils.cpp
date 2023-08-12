@@ -1,18 +1,10 @@
-// https://raw.githubusercontent.com/limengdu/SeeedStudio-XIAO-ESP32S3-Sense-camera/main/CameraWebServer/CameraWebServer.ino
-#include <WiFi.h>
-#include <ArduinoJson.h>
 #include <HTTPClient.h>
+#include <ArduinoJson.h>
+#include <Base64.h>
 
+#include "esp_camera.h"
 #include "secrets.h"
 #include "config.h"
-
-HTTPClient http;
-
-char authorization[128];
-char hostPath[128];
-
-StaticJsonDocument<JSON_SIZE> response;
-StaticJsonDocument<JSON_SIZE> body;
 
 bool checkResponse(int responseCode)
 {
@@ -53,10 +45,15 @@ bool checkResponse(int responseCode)
 }
 
 StaticJsonDocument<JSON_SIZE>
-replicateRequest(String host, StaticJsonDocument<JSON_SIZE> body, const char *action)
+replicateRequest(String host, StaticJsonDocument<JSON_SIZE> body, String action)
 {
+    HTTPClient http;
+    char authorization[128];
+    strcpy(authorization, "Token ");
+    strcat(authorization, REPLICATE_TOKEN);
     StaticJsonDocument<JSON_SIZE> httpResponse;
     httpResponse["error"] = "HTTP Client error!";
+    httpResponse["status"] = "Error";
     String request;
     serializeJson(body, request);
 
@@ -83,7 +80,7 @@ replicateRequest(String host, StaticJsonDocument<JSON_SIZE> body, const char *ac
         if (!checkResponse(httpResponseCode))
         {
             httpResponse["code"] = httpResponseCode;
-            http.end();
+            // http.end();
             return httpResponse;
         }
 
@@ -97,61 +94,51 @@ replicateRequest(String host, StaticJsonDocument<JSON_SIZE> body, const char *ac
     return httpResponse;
 }
 
-void setup()
+char *base64Image(const uint8_t *buffer, size_t length)
 {
-    Serial.begin(115200);
-    while (!Serial)
-        ;
+    const char *prefix = "data:image/jpeg;base64,";
+    size_t prefixLength = strlen(prefix);
 
-    WiFi.begin(SSID, PASSWORD);
-    WiFi.setSleep(false);
-
-    while (WiFi.status() != WL_CONNECTED)
+    // Calculate size needed for the base64 output
+    size_t base64Length = base64_enc_len(length); // Approximate size of base64 encoded data
+    // Create buffer in PSRAM to avoid overloading the memory
+    char *base64Buffer = (char *)ps_malloc(base64Length + prefixLength + 1);
+    if (!base64Buffer)
     {
-        delay(500);
-        Serial.print(".");
+        Serial.println("Failed to allocate base64 buffer in PSRAM");
+        return "";
     }
-    Serial.println("\nWiFi connected");
 
-    strcpy(authorization, "Token ");
-    strcat(authorization, REPLICATE_TOKEN);
+    // Copy the prefix into the buffer
+    strcpy(base64Buffer, prefix);
 
-    body["version"] = MODEL_VERSION;
+    // Convert the image to base64 and append it after the prefix
+    base64_encode(base64Buffer + prefixLength, (char *)buffer, length);
+
+    return base64Buffer;
 }
 
-void loop()
+// Save pictures to SD card
+void take_photo(const char *fileName)
 {
-    // Do nothing. Everything is done in another task by the web server
-    body["input"]["prompt"] = "answer me";
-    strcpy(hostPath, HOST);
-    response = replicateRequest(hostPath, body, "test");
-    Serial.print("Prediction ID: ");
-    serializeJson(response["id"], Serial);
-    Serial.println();
-    strcat(hostPath, "/");
-    strcat(hostPath, response["id"]);
-    while (response["status"] == "starting" || response["status"] == "processing")
+    // Take a photo
+    camera_fb_t *fb = esp_camera_fb_get();
+    if (!fb)
     {
-        delay(5000);
-        response = replicateRequest(hostPath, body, "get");
+        Serial.println("Failed to get camera frame buffer");
+        return;
     }
-    if (response["status"] == "failed")
+
+    char *encodedImage = base64Image(fb->buf, fb->len);
+    if (encodedImage)
     {
-        Serial.println("Failed!");
+        Serial.print("Encoded Image: ");
+        Serial.println(encodedImage);
+
+        // Remember to free the encoded image buffer
+        free(encodedImage);
     }
-    else if (response["status"] == "canceled")
-    {
-        Serial.println("Canceled!");
-    }
-    else if (response["status"] == "succeded")
-    {
-        response = replicateRequest(hostPath, body, "get");
-    }
-    if (response["ouput"] != "")
-    {
-        Serial.print("Result: ");
-        serializeJson(response["output"], Serial);
-        Serial.println();
-    }
-    delay(5000);
+
+    // Release image buffer
+    esp_camera_fb_return(fb);
 }

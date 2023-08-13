@@ -15,32 +15,38 @@ Ojito utilizes the [Seeed Studio XIAO ESP32S3 Sense](https://www.seeedstudio.com
 - Add your token and Wifi credentials to [include/secrets.h](include/secrets.h) 
 
 ```cpp
+// If you do not do this correctly you will get one of these errors during compilation:
+// fatal error: secrets.h: No such file or directory
+// error: 'REPLICATE_TOKEN' was not declared in this scope
+// error: 'SSID' was not declared in this scope
+// error: 'PASSWORD' was not declared in this scope
+
 #define REPLICATE_TOKEN "yourtoken"
 #define SSID "yourssid"
 #define PASSWORD "yourpass"
-// If you do not do this correctly you will get one of these errors during compilation:
-// src/main.cpp:5:10: fatal error: secrets.h: No such file or directory
-// src/main.cpp:42:13: error: 'REPLICATE_TOKEN' was not declared in this scope
-// src/main.cpp:97:16: error: 'SSID' was not declared in this scope
-// src/main.cpp:97:22: error: 'PASSWORD' was not declared in this scope
 ```
 
 - Update the host and model version ([example](https://replicate.com/tofighi/yolox/versions)) in [include/config.h](include/config.h) 
 
 ```cpp
-// Do not add a / to the end of the URL path!
-#define HOST "https://api.replicate.com/v1/predictions"
-// #define HOST "http://10.0.0.31/predictions"
-// Find your version at https://replicate.com/<user>/<model>/versions
-#define MODEL_VERSION "0239647164ce56b643213501d63f6116a76a3c620e4194814968e8ba1aa64cb7"
 // If you do not do this correctly you will get one of these errors one the serial monitor:
 // Error on sending POST: -1
 // Prediction: {"error":"HTTP Client error!","status":"Error"}
+
+// Do not add a / to the end of the URL path!
+// Cloud endpoint ($$$)
+#define HOST "https://api.replicate.com/v1/predictions"
+// Local endpoint
+// #define HOST "http://10.0.0.31/predictions"
+// Find your version at https://replicate.com/<user>/<model>/versions
+#define MODEL_VERSION "0239647164ce56b643213501d63f6116a76a3c620e4194814968e8ba1aa64cb7"
 ```
 
 - Update the serial port in [platformio.ini](platformio.ini) to match your OS/device:
 
 ```bash
+# If you do not do this correctly you will get an error like this:
+# A fatal error occurred: Could not open /dev/tty.usbmodem83301, the port doesn't exist
 upload_port = /dev/ttyACM0
 monitor_port = /dev/ttyACM0
 # Windows ports
@@ -85,16 +91,16 @@ bash utils/TestServer.sh
 - [ArduinoJson](https://github.com/bblanchon/ArduinoJson)
 - [PlatformIO](https://github.com/platformio/platformio-core)
 
-### Work to do
+### Bounties
 
-- [ ] Separate "input" schema from Core library
+- [ ] $50 - [Separate "input" schema from Core library](https://github.com/replicate/cog/issues/1259)
 
-- [ ] Conditionally save images
+- [ ] $5 - [Conditionally save images](https://github.com/limengdu/SeeedStudio-XIAO-ESP32S3-Sense-camera/blob/78ad1b1d80888eb9d571d5725a91b527469fac79/take_photos/take_photos.ino#L33)
 
-- [ ] Web setup interface
+- [ ] $200 - Web setup interface (fully-tested)
 
-- [ ] Find ideal resolution performance
+- [ ] Find ideal resolution/performance
 
-- [ ] Add error handling for logner inference times
+- [ ] $200 - Add error handling for logner inference times
 
-- [ ] Create tests
+- [ ] $250 - Create test framework

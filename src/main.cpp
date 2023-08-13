@@ -5,10 +5,6 @@
 #include "Ojito.h"
 #include "secrets.h"
 
-TaskHandle_t InferenceHandle;
-unsigned long lastCaptureTime = 0; // Last shooting time
-bool camera_sign = false;          // Check camera status
-bool sd_sign = false;              // Check sd status
 StaticJsonDocument<JSON_SIZE> prediction;
 
 camera_config_t config = {
@@ -53,7 +49,7 @@ void InferenceTask(void *pvParameters)
             unsigned long now = millis();
 
             // If it has been more than 1 minute since the last shot, take a picture and save it to the SD card
-            if ((now - lastCaptureTime) >= 2000)
+            if ((now - lastCaptureTime) >= 5000)
             {
 
                 // Analyze environment
@@ -108,7 +104,7 @@ void setup()
 
     camera_sign = setupCamera(config);
 
-    sd_sign = setupSD();
+    // sd_sign = setupSD();
 
     xTaskCreatePinnedToCore(
         InferenceTask,    /* Task function. */

@@ -39,9 +39,6 @@ class Ojito
 {
 private:
     const char *_token;
-    camera_fb_t *_fb;
-    char *_encodedImage;
-    DynamicJsonDocument _request;
     char _authorization[46];
 
 public:

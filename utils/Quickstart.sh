@@ -35,6 +35,7 @@ main() {
     install_platformio
 
     touch include/secrets.h
+    mkdir -p .logs/
 
     $PIO run -t clean
     sudo rm -r ./.pio

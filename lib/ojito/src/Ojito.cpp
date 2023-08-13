@@ -5,45 +5,79 @@
 #include "SD.h"
 #include "Ojito.h"
 
+// Checks the HTTP response code and returns true if it's CREATE
 bool checkResponse(int responseCode)
 {
-    if (responseCode == HTTP_CODE_NO_CONTENT)
+    switch (responseCode)
     {
-        Serial.println("No Content");
-    }
-    else if (responseCode == HTTP_CODE_NOT_FOUND)
-    {
-        Serial.println("Not Found");
-    }
-    else if (responseCode == HTTP_CODE_FORBIDDEN)
-    {
-        Serial.println("Forbidden");
-    }
-    else if (responseCode == HTTP_CODE_INTERNAL_SERVER_ERROR)
-    {
-        Serial.println("Internal Server Error");
-    }
-    else if (responseCode == HTTP_CODE_SERVICE_UNAVAILABLE)
-    {
-        Serial.println("Service Unavailable");
-    }
-    else if (responseCode == HTTP_CODE_GATEWAY_TIMEOUT)
-    {
-        Serial.println("Gateway Timeout");
-    }
-    else if (responseCode == HTTP_CODE_CREATED || responseCode == HTTP_CODE_OK)
-    {
+    case HTTP_CODE_CREATED:
         return true;
-    }
-    else
-    {
+
+    case HTTP_CODE_OK:
+        return true;
+
+    case HTTP_CODE_NO_CONTENT:
+        Serial.println("No Content");
+        break;
+
+    case HTTP_CODE_NOT_FOUND:
+        Serial.println("Not Found");
+        break;
+
+    case HTTP_CODE_FORBIDDEN:
+        Serial.println("Forbidden");
+        break;
+
+    case HTTP_CODE_INTERNAL_SERVER_ERROR:
+        Serial.println("Internal Server Error");
+        break;
+
+    case HTTP_CODE_SERVICE_UNAVAILABLE:
+        Serial.println("Service Unavailable");
+        break;
+
+    case HTTP_CODE_GATEWAY_TIMEOUT:
+        Serial.println("Gateway Timeout");
+        break;
+
+    case HTTP_CODE_MOVED_PERMANENTLY:
+        Serial.println("Moved Permanently");
+        break;
+
+    case HTTP_CODE_FOUND:
+        Serial.println("Found");
+        break;
+
+    case HTTP_CODE_TEMPORARY_REDIRECT:
+        Serial.println("Redirect");
+        break;
+
+    case HTTP_CODE_BAD_REQUEST:
+        Serial.println("Bad Request");
+        break;
+
+    case HTTP_CODE_UNAUTHORIZED:
+        Serial.println("Unauthorized");
+        break;
+
+    case HTTP_CODE_METHOD_NOT_ALLOWED:
+        Serial.println("Method Not Allowed");
+        break;
+
+    case HTTP_CODE_TOO_MANY_REQUESTS:
+        Serial.println("Too Many Requests");
+        break;
+
+    default:
         Serial.print("Error on sending POST: ");
         Serial.println(responseCode);
+        break;
     }
     return false;
 }
 
 char *encode(const uint8_t *buffer, size_t length)
+
 {
     const char *prefix = "data:image/jpeg;base64,";
     size_t prefixLength = strlen(prefix);
@@ -91,7 +125,6 @@ bool setupCamera(camera_config_t &config)
         // TODO Best option for face detection/recognition
         config.frame_size = FRAMESIZE_240X240;
     }
-    config.fb_count = 1;
     config.frame_size = FRAMESIZE_240X240;
 
     // camera init
@@ -124,7 +157,7 @@ bool setupSD()
     return true; // SD initialization check passes
 }
 
-Ojito::Ojito(const char *t) : _request(10000)
+Ojito::Ojito(const char *t)
 {
     _token = t;
     strcpy(_authorization, "Token ");
@@ -135,15 +168,15 @@ StaticJsonDocument<JSON_SIZE> Ojito::predict()
 {
     // You'll fill this with logic to take a photo using whatever method/hardware you have.
     // For instance, if you're using the ESP32 camera module, you'll call appropriate functions here.
-    _fb = esp_camera_fb_get();
-    if (!_fb)
+    camera_fb_t *fb = esp_camera_fb_get();
+    if (!fb)
     {
         Serial.println("Failed to get camera frame buffer");
         return response;
     }
     // Release image buffer
-    _encodedImage = encode(_fb->buf, _fb->len);
-    esp_camera_fb_return(_fb);
+    char *encodedImage = encode(fb->buf, fb->len);
+    esp_camera_fb_return(fb);
 
     if (host == "")
     {
@@ -156,11 +189,11 @@ StaticJsonDocument<JSON_SIZE> Ojito::predict()
         return response;
     }
 
-    _request.clear();
-    _request["version"] = version;
-    _request["input"]["image"] = _encodedImage;
-    // _request["input"]["return_json"] = true;
-    free(_encodedImage);
+    DynamicJsonDocument request(50000);
+    request["version"] = version;
+    request["input"]["image"] = encodedImage;
+    free(encodedImage);
+    // request["input"]["return_json"] = true;
 
     HTTPClient http;
     // TODO Prevent rewriting of this constant
@@ -168,15 +201,16 @@ StaticJsonDocument<JSON_SIZE> Ojito::predict()
     response.clear();
     response["error"] = "HTTP Client error!";
     response["status"] = "Error";
-    String request;
-    serializeJson(_request, request);
+    String requestString;
+    serializeJson(request, requestString);
 
     http.begin(host);
     http.addHeader("Content-Type", "application/json");
     http.addHeader("Authorization", _authorization);
 
     int responseCode = 404;
-    responseCode = http.POST(request);
+    responseCode = http.POST(requestString);
+
     if (!checkResponse(responseCode))
     {
         http.end();
@@ -187,6 +221,7 @@ StaticJsonDocument<JSON_SIZE> Ojito::predict()
     deserializeJson(response, http.getString());
     http.end();
 
+    /*
     JsonArray predictions = response["output"].as<JsonArray>();
     Detection detections[predictions.size()];
     uint8_t highConfidence = 0;
@@ -198,6 +233,7 @@ StaticJsonDocument<JSON_SIZE> Ojito::predict()
             detections[highConfidence].confidence = predictions[i][2];
         }
     }
+    */
 
     return response["output"];
 }

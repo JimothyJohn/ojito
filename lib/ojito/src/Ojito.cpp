@@ -171,7 +171,7 @@ StaticJsonDocument<JSON_SIZE> Ojito::predict()
     String request;
     serializeJson(_request, request);
 
-    http.begin(HOST);
+    http.begin(host);
     http.addHeader("Content-Type", "application/json");
     http.addHeader("Authorization", _authorization);
 

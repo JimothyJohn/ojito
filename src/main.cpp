@@ -1,6 +1,7 @@
 // https://raw.githubusercontent.com/limengdu/SeeedStudio-XIAO-ESP32S3-Sense-camera/main/take_photos/take_photos.ino
 #include <Arduino.h>
 #include "WiFi.h"
+#include "config.h"
 #include "Ojito.h"
 #include "secrets.h"
 
@@ -91,8 +92,9 @@ void InferenceTask(void *pvParameters)
 void setup()
 {
     Serial.begin(115200);
-    while (!Serial)
-        ; // When the serial monitor is turned on, the program starts to execute
+    // Startup delay
+    delay(2000);
+    // while (!Serial); // When the serial monitor is turned on, the program starts to execute
 
     WiFi.begin(SSID, PASSWORD);
     WiFi.setSleep(false);

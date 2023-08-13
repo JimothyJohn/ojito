@@ -34,12 +34,13 @@ main() {
 
     install_platformio
 
-    # touch include/secrets.h
+    touch include/secrets.h
+
     $PIO run -t clean
     sudo rm -r ./.pio
     $PIO run -t upload | tee ./.logs/upload.txt
     # $PIO run -t uploadfs | tee ./.logs/uploadfs.txt && \
-    sleep 1 && \
+    sleep 2
     $PIO device monitor | tee ./.logs/monitor.json
 }
 

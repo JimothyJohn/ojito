@@ -22,10 +22,12 @@ install_docker() {
         curl -fsSL https://get.docker.com -o get-docker.sh
         sudo sh get-docker.sh
         rm get-docker.sh
-    else
-        echo "Docker is already installed."
     fi
 }
+# Image Classification
+IMAGE="r8.im/greatnoobkiller/resnet@sha256:0b4f476526f2e9b88fbede22406b0c851736f70dafc2091c5e1d1628008b49c4"
+# Object Detection
+# IMAGE="--gpus all r8.im/tofighi/yolox@sha256:0239647164ce56b643213501d63f6116a76a3c620e4194814968e8ba1aa64cb7"
 
 main() {
     if [[ "$#" -gt 0 && "$1" == "-h" ]]; then
@@ -35,7 +37,7 @@ main() {
 
     install_docker
 
-    docker run -d -p 80:5000 r8.im/greatnoobkiller/resnet@sha256:0b4f476526f2e9b88fbede22406b0c851736f70dafc2091c5e1d1628008b49c4
+    docker run -d -p 80:5000 $IMAGE
 }
 
 main "$@"

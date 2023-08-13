@@ -25,14 +25,11 @@ const int FB_COUNT = 1;
 #endif
 
 // https://arduinojson.org/v6/how-to/use-external-ram-on-esp32/
-struct SpiRamAllocator
+struct Detection
 {
-    void *allocate(size_t size);
-    void deallocate(void *pointer);
-    void *reallocate(void *ptr, size_t new_size);
+    const char *item;
+    float confidence;
 };
-
-using SpiRamJsonDocument = BasicJsonDocument<SpiRamAllocator>;
 
 bool checkResponse(int responseCode);
 StaticJsonDocument<JSON_SIZE> replicateRequest(DynamicJsonDocument &body, const char *token, const char *action);
@@ -49,13 +46,12 @@ private:
     camera_fb_t *_fb;
     char *_encodedImage;
     DynamicJsonDocument _request;
+    char _authorization[46];
 
 public:
     const char *host;
     const char *version;
     StaticJsonDocument<JSON_SIZE> response;
     Ojito(const char *t);
-    void setHost(const char *h);
-    void setModel(const char *v);
-    StaticJsonDocument<JSON_SIZE> take_photo();
+    StaticJsonDocument<JSON_SIZE> predict();
 };

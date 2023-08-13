@@ -5,26 +5,6 @@
 #include "SD.h"
 #include "Ojito.h"
 
-char hostPath[128];
-
-DynamicJsonDocument body(20000);
-/*
-// https://arduinojson.org/v6/how-to/use-external-ram-on-esp32/
-void *SpiRamAllocator::allocate(size_t size)
-{
-    return heap_caps_malloc(size, MALLOC_CAP_SPIRAM);
-}
-
-void SpiRamAllocator::deallocate(void *pointer)
-{
-    heap_caps_free(pointer);
-}
-
-void *SpiRamAllocator::reallocate(void *ptr, size_t new_size)
-{
-    return heap_caps_realloc(ptr, new_size, MALLOC_CAP_SPIRAM);
-}
-*/
 bool checkResponse(int responseCode)
 {
     if (responseCode == HTTP_CODE_NO_CONTENT)
@@ -63,49 +43,6 @@ bool checkResponse(int responseCode)
     return false;
 }
 
-StaticJsonDocument<JSON_SIZE> replicateRequest(DynamicJsonDocument &body, const char *token, const char *action)
-{
-    HTTPClient http;
-    char authorization[128];
-    strcpy(authorization, "Token ");
-    strcat(authorization, token);
-    StaticJsonDocument<JSON_SIZE> httpResponse;
-    httpResponse["error"] = "HTTP Client error!";
-    httpResponse["status"] = "Error";
-    String request;
-    serializeJson(body, request);
-
-    http.begin(HOST);
-    http.addHeader("Content-Type", "application/json");
-    http.addHeader("Authorization", authorization);
-
-    int httpResponseCode = 404;
-    if (action == "create")
-    {
-        httpResponseCode = http.POST(request);
-    }
-    else if (action == "get")
-    {
-        httpResponseCode = http.GET();
-    }
-    else
-    {
-        Serial.println("Invalid action");
-    }
-
-    if (!checkResponse(httpResponseCode))
-    {
-        httpResponse["code"] = httpResponseCode;
-        // http.end();
-        return httpResponse;
-    }
-
-    deserializeJson(httpResponse, http.getString());
-
-    http.end();
-    return httpResponse;
-}
-
 char *encode(const uint8_t *buffer, size_t length)
 {
     const char *prefix = "data:image/jpeg;base64,";
@@ -129,35 +66,6 @@ char *encode(const uint8_t *buffer, size_t length)
     base64_encode(base64Buffer + prefixLength, (char *)buffer, length);
 
     return base64Buffer;
-}
-
-StaticJsonDocument<JSON_SIZE> see_world(const char *token)
-{
-    DynamicJsonDocument request(10000);
-    StaticJsonDocument<JSON_SIZE> response;
-    camera_fb_t *fb = esp_camera_fb_get();
-
-    if (!fb)
-    {
-        Serial.println("Failed to get camera frame buffer");
-        return response;
-    }
-    char *encodedImage = encode(fb->buf, fb->len);
-
-    request["version"] = MODEL_VERSION;
-    request["input"]["image"] = encodedImage;
-    // body["input"]["image"] = "https://pbxt.replicate.delivery/IWHv3cYJ7CAVPFJN5M9JohLfLr2XaGxXgh5ykca1kvourUZV/taylor1.jpg";
-    // serializeJson(body["input"]["image"], Serial);
-    size_t base64Length = base64_enc_len(fb->len); // Approximate size of base64 encoded data
-
-    // body["input"]["image"] = "";
-    // TODO Stop rewriting memory every time
-
-    // Release buffers
-    free(encodedImage);
-    esp_camera_fb_return(fb);
-
-    return replicateRequest(request, token, "create");
 }
 
 bool setupCamera(camera_config_t &config)
@@ -219,19 +127,11 @@ bool setupSD()
 Ojito::Ojito(const char *t) : _request(10000)
 {
     _token = t;
+    strcpy(_authorization, "Token ");
+    strcat(_authorization, _token);
 }
 
-void Ojito::setHost(const char *h)
-{
-    host = h;
-}
-
-void Ojito::setModel(const char *v)
-{
-    version = v;
-}
-
-StaticJsonDocument<JSON_SIZE> Ojito::take_photo()
+StaticJsonDocument<JSON_SIZE> Ojito::predict()
 {
     // You'll fill this with logic to take a photo using whatever method/hardware you have.
     // For instance, if you're using the ESP32 camera module, you'll call appropriate functions here.
@@ -259,13 +159,12 @@ StaticJsonDocument<JSON_SIZE> Ojito::take_photo()
     _request.clear();
     _request["version"] = version;
     _request["input"]["image"] = _encodedImage;
+    // _request["input"]["return_json"] = true;
     free(_encodedImage);
 
     HTTPClient http;
     // TODO Prevent rewriting of this constant
-    char authorization[128];
-    strcpy(authorization, "Token ");
-    strcat(authorization, _token);
+
     response.clear();
     response["error"] = "HTTP Client error!";
     response["status"] = "Error";
@@ -274,12 +173,31 @@ StaticJsonDocument<JSON_SIZE> Ojito::take_photo()
 
     http.begin(HOST);
     http.addHeader("Content-Type", "application/json");
-    http.addHeader("Authorization", authorization);
+    http.addHeader("Authorization", _authorization);
 
-    uint8_t responseCode = 404;
+    int responseCode = 404;
     responseCode = http.POST(request);
+    if (!checkResponse(responseCode))
+    {
+        http.end();
+        return response;
+    }
 
+    // Deserialize the JSON document
     deserializeJson(response, http.getString());
     http.end();
+
+    JsonArray predictions = response["output"].as<JsonArray>();
+    Detection detections[predictions.size()];
+    uint8_t highConfidence = 0;
+    for (uint8_t i = 0; i < predictions.size(); i++)
+    {
+        if (detections[i].confidence > 0.7)
+        {
+            detections[highConfidence].item = predictions[i][1];
+            detections[highConfidence].confidence = predictions[i][2];
+        }
+    }
+
     return response["output"];
 }

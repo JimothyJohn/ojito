@@ -25,6 +25,7 @@ int base64_encode(char *output, char *input, int inputLen)
 
 			for (i = 0; i < 4; i++)
 			{
+				// pgm_read_byte is unnecessary on ESP32
 				output[encLen++] = b64_alphabet[a4[i]];
 			}
 
@@ -43,6 +44,7 @@ int base64_encode(char *output, char *input, int inputLen)
 
 		for (j = 0; j < i + 1; j++)
 		{
+			// pgm_read_byte is unnecessary on ESP32
 			output[encLen++] = b64_alphabet[a4[j]];
 		}
 

@@ -1,5 +1,4 @@
 import requests
-import base64
 import json
 import os
 from dotenv import load_dotenv
@@ -14,7 +13,7 @@ def ping_server():
         # TODO Add from env before committing...
         "Authorization": f"Token {os.getenv('REPLICATE_TOKEN')}",
     }
-    with open("utils/taylor.txt", "r") as f:
+    with open("docs/taylor.txt", "r") as f:
         image = f"data:image/jpeg;base64,{f.read()}"
         f.close()
 

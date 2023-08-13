@@ -1,0 +1,61 @@
+/*
+  Ojito.h - Class wrappers for Ojito library
+  that allow for easily configureable data collection
+  Created by Nick Armenta, August 12, 2023.
+  Released into the public domain.
+*/
+
+#include <ArduinoJson.h>
+
+// Must go above camera_pins.h
+#define CAMERA_MODEL_XIAO_ESP32S3 // Has PSRAM
+#define JSON_SIZE 512
+// DO NOT add a / to the end of the URL path!
+#define HOST "http://10.0.0.31/predictions"
+// #define HOST "https://api.replicate.com/v1/predictions"
+#define MODEL_VERSION "0b4f476526f2e9b88fbede22406b0c851736f70dafc2091c5e1d1628008b49c4"
+
+#include "esp_camera.h"
+#include "camera_pins.h"
+
+#if CONFIG_IDF_TARGET_ESP32S3
+const int FB_COUNT = 2;
+#else
+const int FB_COUNT = 1;
+#endif
+
+// https://arduinojson.org/v6/how-to/use-external-ram-on-esp32/
+struct SpiRamAllocator
+{
+    void *allocate(size_t size);
+    void deallocate(void *pointer);
+    void *reallocate(void *ptr, size_t new_size);
+};
+
+using SpiRamJsonDocument = BasicJsonDocument<SpiRamAllocator>;
+
+bool checkResponse(int responseCode);
+StaticJsonDocument<JSON_SIZE> replicateRequest(DynamicJsonDocument &body, const char *token, const char *action);
+char *base64Image(const uint8_t *buffer, size_t length);
+void take_photo();
+StaticJsonDocument<JSON_SIZE> see_world(const char *token);
+bool setupCamera(camera_config_t &config);
+bool setupSD();
+
+class Ojito
+{
+private:
+    const char *_token;
+    camera_fb_t *_fb;
+    char *_encodedImage;
+    DynamicJsonDocument _request;
+
+public:
+    const char *host;
+    const char *version;
+    StaticJsonDocument<JSON_SIZE> response;
+    Ojito(const char *t);
+    void setHost(const char *h);
+    void setModel(const char *v);
+    StaticJsonDocument<JSON_SIZE> take_photo();
+};

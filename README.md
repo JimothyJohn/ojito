@@ -26,7 +26,7 @@ Ojito utilizes the [Seeed Studio XIAO ESP32S3 Sense](https://www.seeedstudio.com
 #define PASSWORD "yourpass"
 ```
 
-- Update the host and model version ([example](https://replicate.com/tofighi/yolox/versions)) in [include/config.h](include/config.h) 
+- Update the host and model version ([example](https://replicate.com/tofighi/yolox/versions)) in [src/main.cpp](https://github.com/JimothyJohn/ojito/blob/531752320c08e60082aeb91b78dd55037f5ecef9/src/main.cpp#L8)
 
 ```cpp
 // If you do not do this correctly you will get one of these errors one the serial monitor:

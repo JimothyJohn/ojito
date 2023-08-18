@@ -164,8 +164,14 @@ Ojito::Ojito(const char *t)
     strcat(_authorization, _token);
 }
 
-StaticJsonDocument<JSON_SIZE> Ojito::predict()
+DynamicJsonDocument Ojito::predict()
 {
+    DynamicJsonDocument response(20000);
+    DynamicJsonDocument request(20000);
+
+    response["error"] = "HTTP Client error!";
+    response["status"] = "Error";
+
     // You'll fill this with logic to take a photo using whatever method/hardware you have.
     // For instance, if you're using the ESP32 camera module, you'll call appropriate functions here.
     camera_fb_t *fb = esp_camera_fb_get();
@@ -189,7 +195,6 @@ StaticJsonDocument<JSON_SIZE> Ojito::predict()
         return response;
     }
 
-    DynamicJsonDocument request(50000);
     request["version"] = version;
     request["input"]["image"] = encodedImage;
     free(encodedImage);
@@ -197,10 +202,6 @@ StaticJsonDocument<JSON_SIZE> Ojito::predict()
 
     HTTPClient http;
     // TODO Prevent rewriting of this constant
-
-    response.clear();
-    response["error"] = "HTTP Client error!";
-    response["status"] = "Error";
     String requestString;
     serializeJson(request, requestString);
 
@@ -217,9 +218,15 @@ StaticJsonDocument<JSON_SIZE> Ojito::predict()
         return response;
     }
 
-    // Deserialize the JSON document
+    // Create a smaller response object
     deserializeJson(response, http.getString());
     http.end();
+    DynamicJsonDocument smallResponse(512);
+    smallResponse = response["output"]; // Extract only necessary parts
+
+    return smallResponse;
+
+    // Deserialize the JSON document
 
     /*
     JsonArray predictions = response["output"].as<JsonArray>();
@@ -233,7 +240,7 @@ StaticJsonDocument<JSON_SIZE> Ojito::predict()
             detections[highConfidence].confidence = predictions[i][2];
         }
     }
-    */
 
     return response["output"];
+    */
 }

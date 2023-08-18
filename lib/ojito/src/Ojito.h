@@ -5,6 +5,8 @@
   Released into the public domain.
 */
 
+#ifndef OJITO_H
+#define OJITO_H
 #include <ArduinoJson.h>
 
 // Must go above camera_pins.h
@@ -44,7 +46,7 @@ private:
 public:
     const char *host;
     const char *version;
-    StaticJsonDocument<JSON_SIZE> response;
     Ojito(const char *t);
-    StaticJsonDocument<JSON_SIZE> predict();
+    DynamicJsonDocument predict();
 };
+#endif

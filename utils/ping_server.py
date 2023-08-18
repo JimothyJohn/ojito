@@ -7,7 +7,7 @@ load_dotenv()
 
 
 def ping_server():
-    url = "http://localhost/predictions"
+    url = "http://10.0.0.31/predictions"
     headers = {
         "Content-Type": "application/json",
         # TODO Add from env before committing...
@@ -18,8 +18,8 @@ def ping_server():
         f.close()
 
     data = {"input": {"image": image}}
-    response = requests.post(url=url, headers=headers, data=json.dumps(data))
-    print(response.text)
+    response = json.loads(requests.post(url=url, headers=headers, data=json.dumps(data)).text)
+    print(response["output"])
 
 
 ping_server()

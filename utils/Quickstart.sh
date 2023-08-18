@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 PIO=$HOME/.platformio/penv/bin/pio
+ONLY_CLEAN=false
 
 set -o errexit
 set -o nounset
@@ -27,6 +28,22 @@ install_platformio() {
 }
 
 main() {
+    
+
+    while getopts "hb" option; do
+        case "${option}" in
+            h) help_function; exit 0;;
+            b) ONLY_CLEAN=true;;
+            *) help_function; exit 1;;
+        esac
+    done
+
+    if $ONLY_CLEAN; then
+        $PIO run -t clean
+        sudo rm -r ./.pio
+        exit 0
+    fi
+
     if [[ "$#" -gt 0 && "$1" == "-h" ]]; then
         help_function
         exit 0

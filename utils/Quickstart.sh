@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-
 PIO=$HOME/.platformio/penv/bin/pio
-ONLY_CLEAN=false
+BUILD=false
+FILE_SYSTEM=false
 
 set -o errexit
 set -o nounset
@@ -13,9 +13,11 @@ fi
 help_function() {
     echo "Usage: $0 [OPTION]"
     echo
-    echo "This script checks and installs PlatformIO and Docker if not present."
+    echo "This script checks and installs PlatformIO if not present."
     echo
-    echo "-h      Show this help message and exit."
+    echo "-b      Rebuild Ojito library."
+    echo
+    echo "-f      Update file system."
 }
 
 install_platformio() {
@@ -29,19 +31,22 @@ install_platformio() {
 
 main() {
     
-
     while getopts "hb" option; do
         case "${option}" in
             h) help_function; exit 0;;
-            b) ONLY_CLEAN=true;;
+            b) BUILD=true;;
+            f) FILE_SYSTEM=true;; 
             *) help_function; exit 1;;
         esac
     done
 
-    if $ONLY_CLEAN; then
+    if $BUILD; then
         $PIO run -t clean
         sudo rm -r ./.pio
-        exit 0
+    fi
+
+    if $FILE_SYSTEM; then
+        $PIO run -t uploadfs | tee ./.logs/uploadfs.txt
     fi
 
     if [[ "$#" -gt 0 && "$1" == "-h" ]]; then
@@ -57,7 +62,7 @@ main() {
     $PIO run -t clean
     sudo rm -r ./.pio
     $PIO run -t upload | tee ./.logs/upload.txt
-    # $PIO run -t uploadfs | tee ./.logs/uploadfs.txt && \
+    c
     sleep 2
     $PIO device monitor | tee ./.logs/monitor.json
 }

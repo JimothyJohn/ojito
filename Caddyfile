@@ -3,6 +3,6 @@
 }
 
 :80 {
-	root * data
+	root * docs
 	file_server
 }

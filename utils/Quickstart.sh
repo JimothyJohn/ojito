@@ -59,10 +59,7 @@ main() {
     touch include/secrets.h
     mkdir -p .logs/
 
-    $PIO run -t clean
-    sudo rm -r ./.pio
     $PIO run -t upload | tee ./.logs/upload.txt
-    c
     sleep 2
     $PIO device monitor | tee ./.logs/monitor.json
 }

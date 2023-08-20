@@ -2,6 +2,8 @@
 
 # ojito
 
+### [Web Demo](https://jimothyjohn.github.io/ojito/)
+
 Ojito (oh-hee-toh), a small eye to observe the world.
 
 ## Hardware

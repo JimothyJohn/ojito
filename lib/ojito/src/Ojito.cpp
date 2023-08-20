@@ -1,3 +1,10 @@
+/*
+  Ojito.cpp - Class wrappers for Ojito library
+  that allow for easily configureable data collection
+  Created by Nick Armenta, August 12, 2023.
+  Released into the public domain.
+*/
+
 #include <ArduinoJson.h>
 #include <HTTPClient.h>
 #include <Base64.h>
